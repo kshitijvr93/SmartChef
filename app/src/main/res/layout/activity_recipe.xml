@@ -1,21 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/back">
 
     <ImageView
         android:id="@+id/photo"
         android:layout_width="match_parent"
-        android:layout_height="393dp"
+        android:layout_height="259dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
         app:srcCompat="@android:color/background_dark" />
 
     <TextView
-        android:id="@+id/description"
+        android:id="@+id/title"
         android:layout_width="match_parent"
-        android:layout_height="108dp"
-        android:text="TextView" />
+        android:layout_height="32dp"
+        android:background="@android:color/background_light"
+        android:fontFamily="Helvetica"
+        android:text="TextView"
+        android:textSize="18dp" />
+
+    <ScrollView
+        android:id="@+id/SCROLLER_ID"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/background_light"
+        android:fadeScrollbars="false"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <TextView
+            android:id="@+id/description"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fontFamily="Helvetica"
+            android:text="TextView"
+            tools:background="@android:color/background_light" />
+    </ScrollView>
 </LinearLayout>

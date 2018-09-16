@@ -3,7 +3,6 @@ package net.shellhacks.recipesearch;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -13,13 +12,14 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
-import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+//import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,11 +62,19 @@ public class MainActivity extends AppCompatActivity {
 
     public byte[] byteArray;
     public ArrayList<EntityAnnotation> annots;
+    public String pathToFile;
+    public String subject;
+    public TextView title;
+    public Button camera;
+    public TextView caption;
 
-    public static final String EXTRA_PICTURE = "net.shellhacks.recipesearch.byteArray";
-    public static final String EXTRA_ = "net.shellhacks.recipesearch.byteArray";
+    public static final String EXTRA_INGREDIENTS = "net.shellhacks.recipesearch.ingredients";
+    public static final String EXTRA_SUBJECT = "net.shellhacks.recipesearch.subject";
+    public static final String EXTRA_PATH = "net.shellhacks.recipesearch.pathToFile";
     public static final String RECIPE_URL = "";
-    public static final String API_KEY = "dcb4a456236a815460124f52f51ed8b9";
+    public static final String EXTRA_URL = "net.shellhacks.recipesearch.direction";
+    public static final String API_KEY = "09fe1f5241232fb38608133192736ab6";
+    public static final int IMAGE_QUALITY = 80;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
         vision = visionBuilder.build();
         spinner = (ProgressBar)findViewById(R.id.progressBar);
         spinner.setVisibility(View.GONE);
+        title = (TextView)findViewById(R.id.app_title);
+        camera = (Button)findViewById(R.id.take);
+        caption = (TextView)findViewById(R.id.please);
     }
 
 
@@ -117,10 +129,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, byteArrayOutputStream);
             byteArray = byteArrayOutputStream .toByteArray();
             //((ImageView)findViewById(R.id.photo)).setImageBitmap(rotate(bitmap, exifDegree));
             spinner.setVisibility(View.VISIBLE);
+            title.setVisibility(View.GONE);
+            caption.setVisibility(View.GONE);
+            camera.setVisibility(View.GONE);
 
             AsyncTask.execute(new Runnable() {
                 @Override
@@ -151,26 +166,47 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
 
+                    String d = null;
+                    boolean isFood = false;
+                    for (EntityAnnotation a : annots) {
+                        d = a.getDescription().toLowerCase();
+                        Log.d("[annots]", a.getDescription() + " : " + a.getConfidence());
+                        if(d.contains("food") || d.contains("dish") || d.contains("cuisine") || d.contains("meal")) {
+                            isFood = true;
+                        }
+                    }
+
+                    for (EntityAnnotation a : annots) {
+                        d = a.getDescription().toLowerCase();
+                        if(d.contains("food") || d.contains("dish") || d.contains("cuisine") || d.contains("meal")) {
+                        } else {
+                            break;
+                        }
+                    }
+
                     HttpResponse response = null;
                     try {
+                        if(! isFood)
+                            throw new StringIndexOutOfBoundsException();
+
                         HttpClient client = new DefaultHttpClient();
                         HttpGet hrequest = new HttpGet();
-                        String foodName = "pasta";
-                        hrequest.setURI(new URI("https://www.food2fork.com/api/search?key=" + API_KEY +"&q=" + foodName));
+                        String foodName = d;
+                        hrequest.setURI(new URI("https://www.food2fork.com/api/search?key=" + API_KEY +"&q=" + URLEncoder.encode(foodName, "UTF-8")));
                         response = client.execute(hrequest);
                         BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
                         String line;
                         String jsonText = reader.readLine();
                         jsonText = jsonText.substring(jsonText.indexOf("recipe_id"), jsonText.indexOf("image_url"));
                         jsonText = jsonText.substring(jsonText.indexOf('"') + 4, jsonText.lastIndexOf('"') -3);
-                        int rid = Integer.parseInt(jsonText);
+                        //int rid = Integer.parseInt(jsonText);
 
 
 
 
 
                         Log.d("[========json=======]", jsonText);
-                        Log.d("[========rid=======]", "" + rid);
+                        Log.d("[========rid=======]", "" + jsonText);
 
 
 
@@ -180,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
 
                         client = new DefaultHttpClient();
                         hrequest = new HttpGet();
-                        hrequest.setURI(new URI("https://www.food2fork.com/api/get?key=" + API_KEY +"&rId=" + rid));
+                        hrequest.setURI(new URI("https://www.food2fork.com/api/get?key=" + API_KEY +"&rId=" + jsonText));
                         response = client.execute(hrequest);
                         reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
                         jsonText = "";
@@ -194,10 +230,16 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject obj = new JSONObject(jsonText);
                         obj = new JSONObject(obj.getString("recipe"));
                         String ingred = obj.getString("ingredients");
-                        Log.d("[ingredients]", ingred);
+                        String direction = obj.getString("source_url");
+                        String name = obj.getString("title");
+                        Log.d("[ingred]", ingred);
+                        Log.d("[dire]", direction);
 
                         Intent i = new Intent(MainActivity.this, RecipeActivity.class);
-                        i.putExtra(EXTRA_PICTURE, ingred); //annots.get(0).getDescription()
+                        i.putExtra(EXTRA_SUBJECT, "(" + foodName + ")" + name);
+                        i.putExtra(EXTRA_INGREDIENTS, ingred); //annots.get(0).getDescription()
+                        i.putExtra(EXTRA_PATH, imageFilePath);
+                        i.putExtra(EXTRA_URL, direction);
                         startActivity(i);
 
 
@@ -211,6 +253,13 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     } catch (JSONException e) {
                         e.printStackTrace();
+                    } catch (StringIndexOutOfBoundsException e) {
+                        Intent i = new Intent(MainActivity.this, RecipeActivity.class);
+                        i.putExtra(EXTRA_SUBJECT, "Sorry, no recipe for " + d);
+                        i.putExtra(EXTRA_INGREDIENTS, "We could not find any relevant recipe for the image."); //annots.get(0).getDescription()
+                        i.putExtra(EXTRA_PATH, imageFilePath);
+                        i.putExtra(EXTRA_URL, "");
+                        startActivity(i);
                     }
                 }
             });
