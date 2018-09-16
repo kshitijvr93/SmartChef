@@ -7,10 +7,11 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:layout_width="155dp"
+        android:layout_width="wrap_content"
         android:layout_height="24dp"
-        android:layout_alignBottom="@+id/take"
+        android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
+        android:layout_marginTop="55dp"
         android:text="Please Take Picture" />
 
     <Button
@@ -19,16 +20,16 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="21dp"
+        android:layout_marginBottom="211dp"
         android:text="Take!" />
 
-    <ImageView
-        android:id="@+id/photo"
-        android:layout_width="338dp"
-        android:layout_height="393dp"
-        android:layout_alignParentTop="true"
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        app:srcCompat="@android:color/background_dark" />
+        android:layout_marginBottom="74dp"
+        android:progressDrawable="@drawable/circular_progress_bar" />
 
 </RelativeLayout>
